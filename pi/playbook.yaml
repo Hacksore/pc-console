@@ -1,0 +1,33 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: localhost
+  gather_facts: yes
+  sudo: yes
+  tasks:
+    - name: Install RVM
+      shell: curl -L https://get.rvm.io | bash -s stable --ruby
+      become: root
+    - name: Install bundler
+      shell: gem install bundler
+      become: root
+    - name: Install deps
+      apt:
+        pkg:
+        - python-bluez
+        - python-dbus
+        - sqlite3
+        - bluez-tools
+        - ruby-dev 
+        - bluez
+        - python-bluez 
+        - ppython-dbus
+        - ubertooth
+        - libsqlite3-dev 
+        - bluez-test-scripts
+    - name: Clone repo
+      git:
+        repo: git@github.com/pwnieexpress/blue_hydra.git
+        version: master
+        dest: /opt/blue_hydra
+        accept_hostkey: yes
+      become: no
