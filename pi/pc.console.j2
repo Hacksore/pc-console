@@ -1,0 +1,8 @@
+[Unit]
+Description=Monitor controller
+
+[Service]
+ExecStart=python3 /opt/pc-console/pi/detect_controller.py
+
+[Install]
+WantedBy=multi-user.target

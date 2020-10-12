@@ -1,38 +1,63 @@
 #!/usr/bin/env python
 import socket
+import sys
 import time
+import os
 from wakeonlan import send_magic_packet
-import subprocess
 from subprocess import Popen, PIPE, CalledProcessError
+import threading
+from dotenv import load_dotenv
 
-target_controller_address = 'xdxdxd'
-target_pc_address = '04:92:ff:ff:ff:ff'
-target_pc_online = False
+load_dotenv()
+
+TARGET_CONTROLLER_ADDRESS = os.getenv("TARGET_CONTROLLER_ADDRESS")
+TARGET_PC_MAC_ADDRESS = os.getenv("TARGET_PC_MAC_ADDRESS")
+TARGET_PC_IP_ADDRESS = os.getenv("TARGET_PC_IP_ADDRESS")
+
+# start with the assumption it's online
+target_pc_online = True
+
+def check_for_controller():
+    global target_pc_online
+
+    print('controller data check started')
+    with Popen('ubertooth-rx', stdout=PIPE, bufsize=1, universal_newlines=True) as p:
+        for line in p.stdout:
+            if TARGET_CONTROLLER_ADDRESS in line and not target_pc_online:
+                send_magic_packet(TARGET_PC_MAC_ADDRESS)
+                target_pc_online = True
+                print('sending WOL packet to ' + TARGET_PC_MAC_ADDRESS)
+
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, p.args)
 
 
 def check_remote_host():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.connect((target_pc_address, 445))
-        target_pc_online = True
-    except socket.error as e:
-        target_pc_online = False
-    s.close()
+    print('remote host health check started')
+    global target_pc_online
 
-
-# wait for the controller to come online and send WOL packet
-with Popen('ubertooth-rx', stdout=PIPE, bufsize=1, universal_newlines=True) as p:
-    for line in p.stdout:
-        if target_controller_address in line and not target_pc_online:
-            send_magic_packet(target_pc_address)
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1)
+            s.connect((TARGET_PC_IP_ADDRESS, 3389))
+            s.close()
             target_pc_online = True
-            print('sending WOL packet')
+        except socket.error:
+            target_pc_online = False
+        time.sleep(0.50)
 
-if p.returncode != 0:
-    raise CalledProcessError(p.returncode, p.args)
 
-# check if the remote pc is online via smb port
-# query every 250ms
-while True:
-    check_remote_host()
-    time.sleep(0.25)
+if __name__ == '__main__':
+
+    try:
+        # start bin watcher
+        p1 = threading.Thread(target=check_for_controller)
+        p1.start()
+
+        # # start pc helth checker
+        p2 = threading.Thread(target=check_remote_host)
+        p2.start()
+
+    except KeyboardInterrupt:
+        sys.exit()

@@ -6,18 +6,18 @@ Idea is to allow for a bluetooth xbox controller to be able to power on the comp
 ## Hardware
 - Raspbery Pi
 - Ubertooth One SDR
-- USB Bluetooth Dongle (not needed?)
 - Windows PC that supports WOL
 - Xbox One Wireless Controller
 
 
 ### Objectives
-- Shell is replaced with Steam
-- No Windows password/logon screen
-- System can go to sleep
-- Can wake up on controller power on
+- [x] Shell is replaced with Steam
+- [x] No Windows password/logon screen
+- [x] Can wake up on controller power 
+- [ ] System can go to sleep (Steam seems to be holding windwos hostage 😡)
 
 
-# Notes
-Was able to use `ubertooth-rx` to see a query
-`systime=1602379978 ch=68 LAP=<devicLAP> err=1 clkn=92641 clk_offset=5248 s=-63 n=-55 snr=-8`
+### Getting LAP address
+ - Run `ubertooth-rx` and power on your controller you should see some traffic from your controller
+ - You should see lines like `systime=1602379978 ch=68 LAP=<devicLAP> err=1 clkn=92641 clk_offset=5248 s=-63 n=-55 snr=-8`
+ - Use the `LAP` value to target your contorller

@@ -1,33 +1,59 @@
 #!/usr/bin/env ansible-playbook
+
+## WIP playbook
 ---
 - hosts: localhost
   gather_facts: yes
-  sudo: yes
   tasks:
-    - name: Install RVM
-      shell: curl -L https://get.rvm.io | bash -s stable --ruby
-      become: root
-    - name: Install bundler
-      shell: gem install bundler
-      become: root
     - name: Install deps
       apt:
         pkg:
-        - python-bluez
-        - python-dbus
-        - sqlite3
-        - bluez-tools
-        - ruby-dev 
-        - bluez
-        - python-bluez 
-        - ppython-dbus
-        - ubertooth
-        - libsqlite3-dev 
-        - bluez-test-scripts
-    - name: Clone repo
-      git:
-        repo: git@github.com/pwnieexpress/blue_hydra.git
-        version: master
-        dest: /opt/blue_hydra
-        accept_hostkey: yes
-      become: no
+          - cmake
+          - libusb-1.0-0-dev
+          - make
+          - gcc
+          - g++
+          - libbluetooth-dev
+          - python-bluez
+          - sqlite3
+          - bluez-tools
+          - bluez
+          - python-bluez
+          - ubertooth
+          - libsqlite3-dev
+          - bluez-test-scripts
+          - pkg-config
+          - libpcap-dev
+          - python-numpy
+          - python-pyside
+          - python-qt4
+      become: yes
+    - name: Install libbtbb
+      get_url:
+        url: https://github.com/greatscottgadgets/libbtbb/archive/2018-12-R1.tar.gz
+        dest: /tmp/2018-12-R1.tar.gz
+        mode: "0770"
+      become: yes
+    - name: Extract libbtbb
+      unarchive:
+        src: /tmp/2018-12-R1.tar.gz
+        dest: /opt
+      become: yes
+    - name: Build libbtbb
+      shell: |
+        cd /opt/libbtbb-2018-12-R1
+        mkdir build
+        cd build
+        cmake ..
+        make
+        make install
+      become: yes
+    - name: install myservice systemd unit file
+      template: 
+        src: pc-console.j2 
+        dest: /etc/systemd/system/pc-console.service
+    - name: start pc-console service
+      systemd: 
+        state: started 
+        name: pc-console 
+        daemon_reload: yes
