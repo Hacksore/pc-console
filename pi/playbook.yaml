@@ -15,6 +15,7 @@
           - g++
           - libbluetooth-dev
           - python-bluez
+          - python3-pip
           - sqlite3
           - bluez-tools
           - bluez
@@ -25,35 +26,41 @@
           - pkg-config
           - libpcap-dev
           - python-numpy
-          - python-pyside
           - python-qt4
       become: yes
-    - name: Install libbtbb
+    - name: Fetch libbtbb
       get_url:
         url: https://github.com/greatscottgadgets/libbtbb/archive/2018-12-R1.tar.gz
         dest: /tmp/2018-12-R1.tar.gz
-        mode: "0770"
-      become: yes
+        mode: "0777"
     - name: Extract libbtbb
       unarchive:
         src: /tmp/2018-12-R1.tar.gz
-        dest: /opt
-      become: yes
+        dest: /tmp
     - name: Build libbtbb
       shell: |
-        cd /opt/libbtbb-2018-12-R1
+        cd /tmp/libbtbb-2018-12-R1
         mkdir build
         cd build
         cmake ..
         make
         make install
       become: yes
+    - name: Install python deps
+      pip:
+        requirements: '{{ playbook_dir }}/requirements.txt'
+    - name: Copy env file
+      copy:
+        src: '{{ playbook_dir }}/.env.example'
+        dest: '{{ playbook_dir }}/.env'
     - name: install myservice systemd unit file
       template: 
-        src: pc-console.j2 
+        src: '{{ playbook_dir }}/pc.console.j2'
         dest: /etc/systemd/system/pc-console.service
+      become: yes
     - name: start pc-console service
       systemd: 
         state: started 
         name: pc-console 
         daemon_reload: yes
+      become: yes
